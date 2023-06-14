@@ -1,12 +1,12 @@
 {{ define "zero_derive" }}{{ $s := . }}
 {{- /*gotype: github.com/gotd/td/internal/gen.structDef*/ -}}
-func ({{ $s.Receiver }} *{{ $s.Name }}) Zero() bool {
+func ({{ $s.Receiver }} *{{ $s.Name }}) Zero(layer int32) bool {
     if {{ $s.Receiver }} == nil {
         return true
     }
 {{- /*gotype: github.com/gotd/td/internal/gen.fieldDef*/ -}}
 {{- range $f := $s.Fields }}{{- if ne ($f.Name) ($f.ConditionalField) }}
-    if !({{ $s.Receiver }}.{{template "compare_zero" $f}}) {
+    if !({{ $s.Receiver }}.{{template "compare_zero" $f}}) {{- if $f.AvSinceLayer}}&& layer {{$f.CompareSign}} {{ $f.AvSinceLayer }} {{- end}}{
         return false
     }
 {{- end }}{{- end }}
@@ -21,10 +21,10 @@ func ({{ $s.Receiver }} *{{ $s.Name }}) Zero() bool {
 {{- if or (.Slice) (.DoubleSlice) -}} == nil
 {{- else if eq (.Type) ("bin.Int128") -}} == bin.Int128{}
 {{- else if eq (.Type) ("bin.Int256") -}} == bin.Int256{}
-{{- else if or (hasPrefix (.Type) ("int")) (hasPrefix (.Type) ("float")) }} == 0
+{{- else if or (hasPrefix (.Type) ("int")) (hasPrefix (.Type) ("float")) (eq (.Type) ("bin.Fields"))}} == 0
 {{- else if eq (.Type) ("string") -}} == ""
 {{- else if eq (.Type) ("bool") -}} == false
 {{- else if eq (.Type) ("bin.Object") }} == nil
 {{- else if hasSuffix (.Type) ("Class") }} == nil
-{{- else -}}.Zero()
+{{- else -}}.Zero(layer)
 {{- end -}}{{- end }}

@@ -50,7 +50,13 @@ func (s *ServerDispatcher) On{{ $s.Method }}(f func({{ template "request_params"
         {{- end }}
     }
 
+    {{- if $s.MultiLayer }}
+        {{- range $h := $s.HexIDs }}
+        s.handlers[{{ $s.Name }}{{ $h.Layer }}TypeID] = handler
+        {{- end }}
+    {{- else}}
     s.handlers[{{ $s.Name }}TypeID] = handler
+    {{- end }}
 }
 {{- else }}
 func (s *ServerDispatcher) On{{ $s.Method }}(f func({{ template "request_params" $s }}) ({{if ne $s.Result "BoolClass"}}{{ $s.Result }}{{ else }}bool{{ end }}, error)) {
@@ -76,7 +82,13 @@ func (s *ServerDispatcher) On{{ $s.Method }}(f func({{ template "request_params"
         {{- end }}
     }
 
+    {{- if $s.MultiLayer }}
+        {{- range $h := $s.HexIDs }}
+        s.handlers[{{ $s.Name }}{{ $h.Layer }}TypeID] = handler
+        {{- end }}
+    {{- else}}
     s.handlers[{{ $s.Name }}TypeID] = handler
+    {{- end }}
 }
 {{- end }}
 {{- else }}
@@ -94,7 +106,13 @@ func (s *ServerDispatcher) On{{ $s.Method }}(f func({{ template "request_params"
         return &Ok{}, nil
     }
 
+    {{- if $s.MultiLayer }}
+        {{- range $h := $s.HexIDs }}
+        s.handlers[{{ $s.Name }}{{ $h.Layer }}TypeID] = handler
+        {{- end }}
+    {{- else}}
     s.handlers[{{ $s.Name }}TypeID] = handler
+    {{- end }}
 }
 {{- end }}
 {{ end }}

@@ -27,6 +27,11 @@ type {{ $s.Name }} struct {
 
 // {{ $s.Name }}TypeID is TL type id of {{ $s.Name }}.
 const {{ $s.Name }}TypeID = {{ if not $s.Vector }}0x{{ $s.HexID }}{{- else -}}bin.TypeVector{{- end }}
+{{- if $s.MultiLayer }}
+{{- range $h := $s.HexIDs }}
+const {{ $s.Name }}{{ $h.Layer }}TypeID = {{ if not $s.Vector }}0x{{ $h.Hex }}{{- else -}}bin.TypeVector{{- end }}
+{{- end }}
+{{- end }}
 
 {{ if $s.Interface }}
 // construct implements constructor of {{ $s.Interface }}.

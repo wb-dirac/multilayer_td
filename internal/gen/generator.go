@@ -20,7 +20,8 @@ func definitionType(d tl.Definition) string {
 
 // Generator generates go types from tl.Schema.
 type Generator struct {
-	schema *tl.Schema
+	schema  *tl.Schema
+	schemas []*tl.Schema
 
 	// classes type bindings, key is TL type.
 	classes map[string]classBinding
@@ -49,10 +50,11 @@ type Generator struct {
 }
 
 // NewGenerator initializes and returns new Generator from tl.Schema.
-func NewGenerator(s *tl.Schema, genOpt GeneratorOptions) (*Generator, error) {
+func NewGenerator(ss []*tl.Schema, genOpt GeneratorOptions) (*Generator, error) {
 	genOpt.setDefaults()
 	g := &Generator{
-		schema:        s,
+		schemas:       ss,
+		schema:        ss[0],
 		classes:       map[string]classBinding{},
 		types:         map[string]typeBinding{},
 		mappings:      map[string][]constructorMapping{},

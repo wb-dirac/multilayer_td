@@ -2,10 +2,10 @@
 {{ define "set_flags" }}{{ $s := . }}
 {{- if hasFlags $s }}
 // SetFlags sets flags for non-zero fields.
-func ({{ $s.Receiver }} *{{ $s.Name }}) SetFlags() {
+func ({{ $s.Receiver }} *{{ $s.Name }}) SetFlags(layer int32) {
 {{- range $f := $s.Fields }}
     {{- if $f.Conditional }}
-        if !({{ $s.Receiver }}.{{template "compare_zero" $f}}) {
+        if !({{ $s.Receiver }}.{{template "compare_zero" $f}}) {{- if $f.AvSinceLayer}}&& layer {{$f.CompareSign}} {{ $f.AvSinceLayer }} {{- end}}{
         {{ $s.Receiver }}.{{ $f.ConditionalField }}.Set({{ $f.ConditionalIndex }})
         }
     {{- end }}

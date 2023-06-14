@@ -1,28 +1,45 @@
 {{- /*gotype: github.com/gotd/td/internal/gen.structDef*/ -}}
 {{ define "encode" }}{{ $s := . }}
 // Encode implements bin.Encoder.
-func ({{ $s.Receiver }} *{{ $s.Name }}) Encode({{ $s.BufArg }} *bin.Buffer) error {
+func ({{ $s.Receiver }} *{{ $s.Name }}) Encode({{ $s.BufArg }} *bin.Buffer, layer int32) error {
     if {{ $s.Receiver }} == nil {
         return fmt.Errorf("can't encode {{ $s.RawType }} as nil")
     }
 {{ if not $s.Vector -}}
-    {{ $s.BufArg }}.PutID({{ $s.Name }}TypeID)
+    {{ $s.BufArg }}.PutID(uint32({{ $s.Receiver }}.TypeIdByLayer(layer)))
 {{- end }}
-    return {{ $s.Receiver }}.EncodeBare({{ $s.BufArg }})
+    return {{ $s.Receiver }}.EncodeBare({{ $s.BufArg }}, layer)
+}
+
+func({{ $s.Receiver }} *{{ $s.Name }})TypeIdByLayer(layer int32) int{
+    {{- if $s.MultiLayer }}
+    switch {
+    {{- range $i, $h := $s.HexIDs }}
+    case layer >= {{ $h.Layer }}:
+        return {{ $s.Name }}{{ $h.Layer }}TypeID
+    {{- end }}
+    default:
+    return {{ $s.Name }}TypeID
+    }
+    {{- else }}
+    return {{ $s.Name }}TypeID
+    {{- end }}
 }
 
 // EncodeBare implements bin.BareEncoder.
-func ({{ $s.Receiver }} *{{ $s.Name }}) EncodeBare({{ $s.BufArg }} *bin.Buffer) error {
+func ({{ $s.Receiver }} *{{ $s.Name }}) EncodeBare({{ $s.BufArg }} *bin.Buffer, layer int32) error {
     if {{ $s.Receiver }} == nil {
         return fmt.Errorf("can't encode {{ $s.RawType }} as nil")
     }
 {{- if hasFlags $s }}
-    {{ $s.Receiver }}.SetFlags()
+    {{ $s.Receiver }}.SetFlags(layer)
 {{- end }}
 {{- range $f := $s.Fields }}
     {{- if not $f.ConditionalBool }}
     {{- if $f.Conditional }}
-    if {{ $s.Receiver }}.{{ $f.ConditionalField }}.Has({{ $f.ConditionalIndex }}) {
+    if {{ $s.Receiver }}.{{ $f.ConditionalField }}.Has({{ $f.ConditionalIndex }}) {{- if $f.AvSinceLayer}}&& layer {{$f.CompareSign}} {{ $f.AvSinceLayer }} {{- end}}{
+    {{- else if $f.AvSinceLayer }}
+    if layer {{$f.CompareSign}} {{ $f.AvSinceLayer }} {
     {{- end }}
     {{- if $f.Vector }}
     {{ if not $f.BareVector }}{{ $s.BufArg }}.PutVectorHeader(len({{ $s.Receiver }}.{{ $f.Name }})){{ else }}{{ $s.BufArg }}.PutInt(len({{ $s.Receiver }}.{{ $f.Name }})){{- end }}
@@ -37,7 +54,7 @@ func ({{ $s.Receiver }} *{{ $s.Name }}) EncodeBare({{ $s.BufArg }} *bin.Buffer) 
             return fmt.Errorf("unable to encode {{ $s.RawType }}: field {{ $f.RawName }} element with index %d is nil", idx)
             }
         {{- end}}
-        if err := v.Encode{{ if and $f.BareEncoder $f.BareVector }}Bare{{ end }}({{ $s.BufArg }}); err != nil {
+        if err := v.Encode{{ if and $f.BareEncoder $f.BareVector }}Bare{{ end }}({{ $s.BufArg }}, layer); err != nil {
             return fmt.Errorf("unable to encode{{ if and $f.BareEncoder $f.BareVector }} bare{{ end }} {{ $s.RawType }}: field {{ $f.RawName }} element with index %d: %w", idx, err)
         }
     {{- else }}
@@ -54,14 +71,14 @@ func ({{ $s.Receiver }} *{{ $s.Name }}) EncodeBare({{ $s.BufArg }} *bin.Buffer) 
         return fmt.Errorf("unable to encode {{ $s.RawType }}: field {{ $f.RawName }} is nil")
     }
     {{- end}}
-    if err := {{ $s.Receiver }}.{{ $f.Name }}.Encode({{ $s.BufArg }}); err != nil {
+    if err := {{ $s.Receiver }}.{{ $f.Name }}.Encode({{ $s.BufArg }}{{- if ne $f.Type "bin.Fields"}}, layer{{- end }}); err != nil {
         return fmt.Errorf("unable to encode {{ $s.RawType }}: field {{ $f.RawName }}: %w", err)
     }
     {{- else }}
     {{ $s.BufArg }}.Put{{ $f.Func }}({{ $s.Receiver }}.{{ $f.Name }})
     {{- end }}
     {{- end }}
-    {{- if $f.Conditional }}
+    {{- if or $f.Conditional $f.AvSinceLayer}}
     }
     {{- end }}
     {{- end }}

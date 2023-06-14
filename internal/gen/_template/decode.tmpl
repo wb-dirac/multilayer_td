@@ -5,16 +5,32 @@ func ({{ $s.Receiver }} *{{ $s.Name }}) Decode({{ $s.BufArg }} *bin.Buffer) erro
     if {{ $s.Receiver }} == nil {
         return fmt.Errorf("can't decode {{ $s.RawType }} to nil")
     }
+    var layer int32
 {{ if not $s.Vector -}}
+    {{- if $s.MultiLayer }}
+	id, err := {{ $s.BufArg }}.Uint32()
+	if err != nil {
+		return err
+	}
+        switch id {
+        {{- range $i, $h := $s.HexIDs }}
+        case {{ $s.Name }}{{ $h.Layer }}TypeID:
+        layer = {{ $h.Layer}}
+        {{- end }}
+        default:
+            return fmt.Errorf("unable to decode {{ $s.RawType }}: %w", bin.NewUnexpectedID(id))
+        }
+    {{- else }}
     if err := {{ $s.BufArg }}.ConsumeID({{ $s.Name }}TypeID); err != nil {
         return fmt.Errorf("unable to decode {{ $s.RawType }}: %w", err)
     }
+    {{- end }}
 {{- end }}
-    return {{ $s.Receiver }}.DecodeBare({{ $s.BufArg }})
+    return {{ $s.Receiver }}.DecodeBare({{ $s.BufArg }}, layer)
 }
 
 // DecodeBare implements bin.BareDecoder.
-func ({{ $s.Receiver }} *{{ $s.Name }}) DecodeBare({{ $s.BufArg }} *bin.Buffer) error {
+func ({{ $s.Receiver }} *{{ $s.Name }}) DecodeBare({{ $s.BufArg }} *bin.Buffer, layer int32) error {
     if {{ $s.Receiver }} == nil {
         return fmt.Errorf("can't decode {{ $s.RawType }} to nil")
     }
@@ -23,7 +39,9 @@ func ({{ $s.Receiver }} *{{ $s.Name }}) DecodeBare({{ $s.BufArg }} *bin.Buffer) 
         {{ $s.Receiver }}.{{ $f.Name }} = {{ $s.Receiver }}.{{ $f.ConditionalField }}.Has({{ $f.ConditionalIndex }})
     {{- else }}
         {{- if $f.Conditional}}
-            if {{ $s.Receiver }}.{{ $f.ConditionalField }}.Has({{ $f.ConditionalIndex }}) {
+            if {{ $s.Receiver }}.{{ $f.ConditionalField }}.Has({{ $f.ConditionalIndex }}) {{- if $f.AvSinceLayer}}&& layer {{$f.CompareSign}} {{ $f.AvSinceLayer }} {{- end}}{
+        {{- else if $f.AvSinceLayer }}
+            if layer {{$f.CompareSign}} {{ $f.AvSinceLayer }} {
         {{- else}}
             {
         {{- end }}

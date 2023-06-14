@@ -54,16 +54,26 @@ func namespacedName(name string, namespace []string) string {
 func (g *Generator) makeBindings() error {
 	// 1) Searching for all classes with single constructor.
 	// If class has single constructor, it can be reduced to specific type.
+	var schemaDefinitions []*tl.SchemaDefinition
 	constructors := map[string]int{}
-	for _, d := range g.schema.Definitions {
-		if d.Category != tl.CategoryType {
-			continue
+	typeMap := make(map[string]struct{})
+	for _, schema := range g.schemas {
+		for i, d := range schema.Definitions {
+			typeKey := definitionType(d.Definition)
+			if _, ok := typeMap[typeKey]; ok {
+				continue
+			}
+			typeMap[typeKey] = struct{}{}
+			schemaDefinitions = append(schemaDefinitions, &schema.Definitions[i])
+			if d.Category != tl.CategoryType {
+				continue
+			}
+			constructors[d.Definition.Type.String()]++
 		}
-		constructors[d.Definition.Type.String()]++
 	}
 
 	// 2) Binding TL types to structures and interfaces.
-	for _, sd := range g.schema.Definitions {
+	for _, sd := range schemaDefinitions {
 		var (
 			d        = sd.Definition
 			classKey = d.Type.String()

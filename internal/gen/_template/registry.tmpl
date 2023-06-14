@@ -13,7 +13,7 @@ const Layer = {{ $.Layer }}
 func TypesMap() map[uint32]string {
   return map[uint32]string {
 {{- range $elem := $.Registry }}
-    {{ $elem.Name }}TypeID: "{{ $elem.Raw }}",
+    {{ $elem.Name }}{{- if $elem.Layer }}{{$elem.Layer}}{{- end }}TypeID: "{{ $elem.Raw }}",
 {{- end }}
   }
 }
@@ -22,7 +22,7 @@ func TypesMap() map[uint32]string {
 func NamesMap() map[string]uint32 {
   return map[string]uint32 {
 {{- range $elem := $.Registry }}
-    "{{ trimSuffix (trimSuffix ($elem.Raw) ($elem.HexID)) ("#") }}": {{ $elem.Name }}TypeID,
+    "{{ trimSuffix (trimSuffix ($elem.Raw) ($elem.HexID)) ("#") }}": {{ $elem.Name }}{{- if $elem.Layer }}{{$elem.Layer}}{{- end }}TypeID,
 {{- end }}
   }
 }
@@ -31,7 +31,7 @@ func NamesMap() map[string]uint32 {
 func TypesConstructorMap() map[uint32]func() bin.Object {
 return map[uint32]func() bin.Object {
 {{- range $elem := $.Registry }}
-    {{ $elem.Name }}TypeID: func() bin.Object { return &{{ $elem.Name }}{} },
+    {{ $elem.Name }}{{- if $elem.Layer }}{{$elem.Layer}}{{- end }}TypeID: func() bin.Object { return &{{ $elem.Name }}{} },
 {{- end }}
   }
 }

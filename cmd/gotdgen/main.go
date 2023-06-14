@@ -46,15 +46,20 @@ func main() {
 	if *schemaPath == "" {
 		panic("no schema provided")
 	}
-	f, err := os.Open(*schemaPath)
-	if err != nil {
-		panic(err)
-	}
-	defer func() { _ = f.Close() }()
 
-	schema, err := tl.Parse(f)
-	if err != nil {
-		panic(err)
+	var schemas []*tl.Schema
+	for _, path := range strings.Split(*schemaPath, ",") {
+		f, err := os.Open(path)
+		if err != nil {
+			panic(err)
+		}
+		defer func() { _ = f.Close() }()
+
+		schema, err := tl.Parse(f)
+		if err != nil {
+			panic(err)
+		}
+		schemas = append(schemas, schema)
 	}
 	files, err := os.ReadDir(*targetDir)
 	if err != nil && !os.IsNotExist(err) {
@@ -88,7 +93,7 @@ func main() {
 		Root:   *targetDir,
 		Format: *performFormat,
 	}
-	g, err := gen.NewGenerator(schema, genOpts)
+	g, err := gen.NewGenerator(schemas, genOpts)
 	if err != nil {
 		panic(fmt.Sprintf("%+v", err))
 	}

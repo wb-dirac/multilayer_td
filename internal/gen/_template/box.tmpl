@@ -8,7 +8,11 @@ func Decode{{ $f.Func }} (buf *bin.Buffer) ({{ $f.Name }}, error) {
     }
     switch id {
     {{- range $c := $f.Constructors }}
+    {{- if $c.MultiLayer }}
+    case {{- range $i, $h := $c.HexIDs }}{{- if $i}},{{- end }} {{ $c.Name }}{{ $h.Layer }}TypeID{{- end}}:
+    {{- else }}
     case {{ $c.Name }}TypeID:
+    {{- end }}
         // Decoding {{ $c.RawType }}.
         v := {{ $c.Name }}{}
         if err := v.Decode(buf); err != nil {
@@ -63,11 +67,11 @@ func (b *{{ $f.Func }}Box) Decode(buf *bin.Buffer) error {
 }
 
 // Encode implements bin.Encode for {{ $f.Func }}Box.
-func (b *{{ $f.Func }}Box) Encode(buf *bin.Buffer) error {
+func (b *{{ $f.Func }}Box) Encode(buf *bin.Buffer, layer int32) error {
     if b == nil || b.{{ $f.BaseName }} == nil {
         return fmt.Errorf("unable to encode {{ $f.Name }} as nil")
     }
-    return b.{{ $f.BaseName }}.Encode(buf)
+    return b.{{ $f.BaseName }}.Encode(buf, layer)
 }
 
 {{- if $.Config.Flags.TDLibJSON }}

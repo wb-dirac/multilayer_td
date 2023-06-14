@@ -79,7 +79,7 @@ Get{{$.Name}}() (value {{ template "print_type" $ }}{{ if and ($.Conditional) (n
     // String implements fmt.Stringer.
     String() string
     // Zero returns true if current object has a zero value.
-    Zero() bool
+    Zero(layer int32) bool
 {{- end }}
 
 

@@ -53,6 +53,9 @@ type fieldDef struct {
 	ConditionalBool bool
 	// Links from documentation
 	Links []string
+
+	AvSinceLayer int
+	CompareSign  string
 }
 
 type fieldPair struct {
